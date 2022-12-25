@@ -1,3 +1,6 @@
+use core::time;
+use std::thread;
+
 use reqwest::{Error, Response};
 use serde::{Deserialize, Serialize};
 
@@ -54,12 +57,12 @@ impl TelegramBot {
         let client = reqwest::Client::new();
         loop {
             let res = client
-            .get(format!(
-                "{}{}",
-                self.telegram_bot_api_url, "getUpdates"
-            ))
-            .send()
-            .await;
+                .get(format!("{}{}", self.telegram_bot_api_url, "getUpdates"))
+                .send()
+                .await;
+            if res.is_err() {
+                println!("update error: {}", res.unwrap_err())
+            }
             callback(&func_param);
             thread::sleep(time::Duration::from_millis(update_timeout_millis));
         }
