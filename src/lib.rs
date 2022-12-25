@@ -1,20 +1,15 @@
 use core::time;
-use std::thread;
+use std::{thread, time::Duration};
 
 use reqwest::{Error, Response};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de};
 
-#[derive(Serialize, Deserialize)]
-pub struct Message {
-    chat_id: i64,
-    text: String,
+impl Message {
+    pub fn new(chat_id: i64, text: String) -> Self {
+        return Message { chat_id, text };
+    }
 }
 
-pub struct TelegramBot {
-    api_token: String,
-    telegram_api_url: String,
-    telegram_bot_api_url: String,
-}
 
 impl TelegramBot {
     pub fn new(api_token: String) -> Self {
@@ -48,23 +43,59 @@ impl TelegramBot {
         return res;
     }
 
-    pub async fn get_updates<T>(
+    pub async fn get_updates<TFunc, TResponseResult: de::DeserializeOwned>(
         &self,
-        callback: fn(&T),
+        callback: fn(&TFunc, Vec<TResponseResult>),
         update_timeout_millis: u64,
-        func_param: T,
+        func_param: TFunc,
     ) {
         let client = reqwest::Client::new();
         loop {
             let res = client
                 .get(format!("{}{}", self.telegram_bot_api_url, "getUpdates"))
+                .timeout(Duration::from_millis(update_timeout_millis))
                 .send()
                 .await;
-            if res.is_err() {
-                println!("update error: {}", res.unwrap_err())
+            let update_resault = res
+                .unwrap()
+                .json::<TelegramResponseResult<Vec<TResponseResult>>>()
+                .await
+                .unwrap();
+            if update_resault.result.len() > 0 {
+                callback(&func_param, update_resault.result);
             }
-            callback(&func_param);
-            thread::sleep(time::Duration::from_millis(update_timeout_millis));
+            thread::sleep(time::Duration::from_millis(1500));
         }
     }
+}
+
+#[derive(Serialize, Deserialize)]
+struct TelegramResponseResult<T> {
+    ok: bool,
+    result: T,
+}
+
+#[derive(Serialize, Deserialize)]
+struct TelegramUpdate {
+    update_id: i64,
+    message: TelelgamMessage,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct TelelgamMessage {
+    message_id: i64,
+    text: String,
+    date: i64,
+}
+
+pub struct TelegramBot {
+    api_token: String,
+    telegram_api_url: String,
+    telegram_bot_api_url: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Message {
+    chat_id: i64,
+    text: String,
 }
