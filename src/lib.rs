@@ -14,6 +14,7 @@ impl TelegramBot {
         let token = String::from(&api_token);
         return TelegramBot {
             telegram_api_url: String::from("https://api.telegram.org/"),
+            last_update_id: 0,
             api_token,
             telegram_bot_api_url: format!(
                 "{}{}{}{}",
@@ -42,37 +43,38 @@ impl TelegramBot {
     }
 
     pub async fn get_updates<TFunc, TTelegramUpdate>(
-        &self,
+        &mut self,
         callback: fn(&TFunc, Vec<TelegramUpdate>),
         update_timeout_millis: u64,
         func_param: TFunc,
     ) {
         let client = reqwest::Client::new();
-        let mut last_update_id = 0;
-        loop {
-            let res = client
-                .get(format!(
-                    "{}{}{}{}",
-                    self.telegram_bot_api_url, "getUpdates/", "offset=", last_update_id
-                ))
-                .timeout(Duration::from_millis(update_timeout_millis))
-                .send()
-                .await;
-            let update_resault = res
-                .unwrap()
-                .json::<TelegramResponseResult<Vec<TelegramUpdate>>>()
-                .await
-                .unwrap();
-            if update_resault.result.len() > 0 {
-                for i in &update_resault.result {
-                    if i.update_id > i.update_id {
-                        last_update_id = i.update_id;
-                    }
+
+        let res = client
+            .get(format!(
+                "{}{}{}{}",
+                self.telegram_bot_api_url,
+                "getUpdates/",
+                "offset=",
+                &self.last_update_id + 1
+            ))
+            .timeout(Duration::from_millis(update_timeout_millis))
+            .send()
+            .await;
+        let update_resault = res
+            .unwrap()
+            .json::<TelegramResponseResult<Vec<TelegramUpdate>>>()
+            .await
+            .unwrap();
+        if update_resault.result.len() > 0 {
+            for i in &update_resault.result {
+                if i.update_id > self.last_update_id {
+                    self.last_update_id = i.update_id;
                 }
-                callback(&func_param, update_resault.result);
             }
-            thread::sleep(time::Duration::from_millis(1500));
+            callback(&func_param, update_resault.result);
         }
+        thread::sleep(time::Duration::from_millis(1500));
     }
 }
 
@@ -99,6 +101,7 @@ pub struct TelegramBot {
     api_token: String,
     telegram_api_url: String,
     telegram_bot_api_url: String,
+    last_update_id: i64,
 }
 
 #[derive(Serialize, Deserialize)]
