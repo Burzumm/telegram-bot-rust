@@ -1,15 +1,13 @@
 use core::time;
-use std::{thread, time::Duration};
-
 use reqwest::{Error, Response};
-use serde::{Deserialize, Serialize, de};
+use serde::{Deserialize, Serialize};
+use std::{thread, time::Duration};
 
 impl Message {
     pub fn new(chat_id: i64, text: String) -> Self {
         return Message { chat_id, text };
     }
 }
-
 
 impl TelegramBot {
     pub fn new(api_token: String) -> Self {
@@ -43,25 +41,34 @@ impl TelegramBot {
         return res;
     }
 
-    pub async fn get_updates<TFunc, TResponseResult: de::DeserializeOwned>(
+    pub async fn get_updates<TFunc, TTelegramUpdate>(
         &self,
-        callback: fn(&TFunc, Vec<TResponseResult>),
+        callback: fn(&TFunc, Vec<TelegramUpdate>),
         update_timeout_millis: u64,
         func_param: TFunc,
     ) {
         let client = reqwest::Client::new();
+        let mut last_update_id = 0;
         loop {
             let res = client
-                .get(format!("{}{}", self.telegram_bot_api_url, "getUpdates"))
+                .get(format!(
+                    "{}{}{}{}",
+                    self.telegram_bot_api_url, "getUpdates/", "offset=", last_update_id
+                ))
                 .timeout(Duration::from_millis(update_timeout_millis))
                 .send()
                 .await;
             let update_resault = res
                 .unwrap()
-                .json::<TelegramResponseResult<Vec<TResponseResult>>>()
+                .json::<TelegramResponseResult<Vec<TelegramUpdate>>>()
                 .await
                 .unwrap();
             if update_resault.result.len() > 0 {
+                for i in &update_resault.result {
+                    if i.update_id > i.update_id {
+                        last_update_id = i.update_id;
+                    }
+                }
                 callback(&func_param, update_resault.result);
             }
             thread::sleep(time::Duration::from_millis(1500));
@@ -76,7 +83,7 @@ struct TelegramResponseResult<T> {
 }
 
 #[derive(Serialize, Deserialize)]
-struct TelegramUpdate {
+pub struct TelegramUpdate {
     update_id: i64,
     message: TelelgamMessage,
 }
