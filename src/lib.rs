@@ -1,11 +1,10 @@
-use core::time;
-use reqwest::{Error, Response};
+use reqwest::{Client, Error, Response};
 use serde::{Deserialize, Serialize};
-use std::{thread, time::Duration};
+use std::time::Duration;
 
 impl Message {
     pub fn new(chat_id: i64, text: String) -> Self {
-        return Message { chat_id, text };
+        Message { chat_id, text }
     }
 }
 
@@ -24,7 +23,7 @@ impl TelegramBot {
     }
 
     pub async fn get_me(&self) {
-        let client = reqwest::Client::new();
+        let client = Client::new();
         let res = client
             .get(format!("{}{}", self.telegram_bot_api_url, "getMe"))
             .send()
@@ -34,18 +33,36 @@ impl TelegramBot {
 
     pub async fn send_message(&self, message: Message) -> Result<Response, Error> {
         let client = reqwest::Client::new();
-        let res = client
+        return client
             .post(format!("{}{}", self.telegram_bot_api_url, "sendMessage"))
             .json(&message)
             .send()
             .await;
-        return res;
     }
 
     pub async fn get_updates(&mut self, update_timeout_secs: u64) -> Vec<TelegramUpdate> {
         let client = reqwest::Client::new();
+        let res = self
+            .get_updates_internal(&client, update_timeout_secs)
+            .await;
+        let update_result = res
+            .unwrap()
+            .json::<TelegramResponseResult<Vec<TelegramUpdate>>>()
+            .await
+            .unwrap();
+        return if !update_result.result.is_empty() {
+            update_result.result
+        } else {
+            vec![]
+        };
+    }
 
-        let res = client
+    async fn get_updates_internal(
+        &mut self,
+        client: &Client,
+        update_timeout_secs: u64,
+    ) -> Result<Response, Error> {
+        return client
             .get(format!(
                 "{}{}{}{}{}{}",
                 self.telegram_bot_api_url,
@@ -58,16 +75,6 @@ impl TelegramBot {
             .timeout(Duration::from_secs(update_timeout_secs + 10))
             .send()
             .await;
-        let update_resault = res
-            .unwrap()
-            .json::<TelegramResponseResult<Vec<TelegramUpdate>>>()
-            .await
-            .unwrap();
-        if update_resault.result.len() > 0 {
-            return update_resault.result;
-        } else {
-            return vec![];
-        }
     }
 
     pub async fn update_callback<TFunc, TTelegramUpdate>(
@@ -77,32 +84,21 @@ impl TelegramBot {
         func_param: TFunc,
     ) {
         let client = reqwest::Client::new();
-
-        let res = client
-            .get(format!(
-                "{}{}{}{}{}{}",
-                self.telegram_bot_api_url,
-                "getUpdates?",
-                "offset=",
-                &self.last_update_id + 1,
-                "&timeout=",
-                update_timeout_secs
-            ))
-            .timeout(Duration::from_secs(update_timeout_secs + 10))
-            .send()
+        let res = self
+            .get_updates_internal(&client, update_timeout_secs)
             .await;
-        let update_resault = res
+        let update_result = res
             .unwrap()
             .json::<TelegramResponseResult<Vec<TelegramUpdate>>>()
             .await
             .unwrap();
-        if update_resault.result.len() > 0 {
-            for i in &update_resault.result {
+        if !update_result.result.is_empty() {
+            for i in &update_result.result {
                 if i.update_id > self.last_update_id {
                     self.last_update_id = i.update_id;
                 }
             }
-            callback(&func_param, update_resault.result);
+            callback(&func_param, update_result.result);
         }
     }
 }
@@ -116,11 +112,11 @@ struct TelegramResponseResult<T> {
 #[derive(Serialize, Deserialize)]
 pub struct TelegramUpdate {
     pub update_id: i64,
-    pub message: TelelgamMessage,
+    pub message: TelegramMessage,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct TelelgamMessage {
+pub struct TelegramMessage {
     pub message_id: i64,
     pub text: String,
     pub date: i64,
