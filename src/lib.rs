@@ -42,23 +42,53 @@ impl TelegramBot {
         return res;
     }
 
-    pub async fn get_updates<TFunc, TTelegramUpdate>(
+    pub async fn get_updates(&mut self, update_timeout_secs: u64) -> Vec<TelegramUpdate> {
+        let client = reqwest::Client::new();
+
+        let res = client
+            .get(format!(
+                "{}{}{}{}{}{}",
+                self.telegram_bot_api_url,
+                "getUpdates?",
+                "offset=",
+                &self.last_update_id + 1,
+                "&timeout=",
+                update_timeout_secs
+            ))
+            .timeout(Duration::from_secs(update_timeout_secs + 10))
+            .send()
+            .await;
+        let update_resault = res
+            .unwrap()
+            .json::<TelegramResponseResult<Vec<TelegramUpdate>>>()
+            .await
+            .unwrap();
+        if update_resault.result.len() > 0 {
+            return update_resault.result;
+        } else {
+            return vec![];
+        }
+    }
+
+    pub async fn update_callback<TFunc, TTelegramUpdate>(
         &mut self,
         callback: fn(&TFunc, Vec<TelegramUpdate>),
-        update_timeout_millis: u64,
+        update_timeout_secs: u64,
         func_param: TFunc,
     ) {
         let client = reqwest::Client::new();
 
         let res = client
             .get(format!(
-                "{}{}{}{}",
+                "{}{}{}{}{}{}",
                 self.telegram_bot_api_url,
-                "getUpdates/",
+                "getUpdates?",
                 "offset=",
-                &self.last_update_id + 1
+                &self.last_update_id + 1,
+                "&timeout=",
+                update_timeout_secs
             ))
-            .timeout(Duration::from_millis(update_timeout_millis))
+            .timeout(Duration::from_secs(update_timeout_secs + 10))
             .send()
             .await;
         let update_resault = res
@@ -74,7 +104,6 @@ impl TelegramBot {
             }
             callback(&func_param, update_resault.result);
         }
-        thread::sleep(time::Duration::from_millis(1500));
     }
 }
 
@@ -86,15 +115,15 @@ struct TelegramResponseResult<T> {
 
 #[derive(Serialize, Deserialize)]
 pub struct TelegramUpdate {
-    update_id: i64,
-    message: TelelgamMessage,
+    pub update_id: i64,
+    pub message: TelelgamMessage,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct TelelgamMessage {
-    message_id: i64,
-    text: String,
-    date: i64,
+    pub message_id: i64,
+    pub text: String,
+    pub date: i64,
 }
 
 pub struct TelegramBot {
