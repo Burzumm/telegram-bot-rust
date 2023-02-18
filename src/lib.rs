@@ -103,25 +103,26 @@ impl TelegramBot {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct TelegramResponseResult<T> {
     ok: bool,
     result: T,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TelegramUpdate {
     pub update_id: i64,
     pub message: TelegramMessage,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TelegramMessage {
     pub message_id: i64,
     pub text: String,
     pub date: i64,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TelegramBot {
     api_token: String,
     telegram_api_url: String,
@@ -129,7 +130,7 @@ pub struct TelegramBot {
     last_update_id: i64,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Message {
     chat_id: i64,
     text: String,
