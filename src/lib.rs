@@ -112,7 +112,7 @@ pub struct TelegramUpdate {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TelegramMessage {
     pub message_id: i64,
-    pub text: String,
+    pub text: Option<String>,
     pub date: i64,
 }
 
