@@ -40,21 +40,15 @@ impl TelegramBot {
             .await;
     }
 
-    pub async fn get_updates(&mut self, update_timeout_secs: u64) -> Vec<TelegramUpdate> {
-        let client = reqwest::Client::new();
+    pub async fn get_updates(&mut self, update_timeout_secs: u64) -> Result<Vec<TelegramUpdate>, Error> {
+        let client = Client::new();
         let res = self
             .get_updates_internal(&client, update_timeout_secs)
-            .await;
+            .await?;
         let update_result = res
-            .unwrap()
             .json::<TelegramResponseResult<Vec<TelegramUpdate>>>()
-            .await
-            .unwrap();
-        return if !update_result.result.is_empty() {
-            update_result.result
-        } else {
-            vec![]
-        };
+            .await?;
+        Ok(update_result.result)
     }
 
     async fn get_updates_internal(
