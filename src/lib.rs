@@ -40,21 +40,15 @@ impl TelegramBot {
             .await;
     }
 
-    pub async fn get_updates(&mut self, update_timeout_secs: u64) -> Vec<TelegramUpdate> {
-        let client = reqwest::Client::new();
+    pub async fn get_updates(&mut self, update_timeout_secs: u64) -> Result<Vec<TelegramUpdate>, Error> {
+        let client = Client::new();
         let res = self
             .get_updates_internal(&client, update_timeout_secs)
-            .await;
+            .await?;
         let update_result = res
-            .unwrap()
             .json::<TelegramResponseResult<Vec<TelegramUpdate>>>()
-            .await
-            .unwrap();
-        return if !update_result.result.is_empty() {
-            update_result.result
-        } else {
-            vec![]
-        };
+            .await?;
+        Ok(update_result.result)
     }
 
     async fn get_updates_internal(
@@ -103,25 +97,26 @@ impl TelegramBot {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct TelegramResponseResult<T> {
     ok: bool,
     result: T,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TelegramUpdate {
     pub update_id: i64,
     pub message: TelegramMessage,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TelegramMessage {
     pub message_id: i64,
-    pub text: String,
+    pub text: Option<String>,
     pub date: i64,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TelegramBot {
     api_token: String,
     telegram_api_url: String,
@@ -129,7 +124,7 @@ pub struct TelegramBot {
     last_update_id: i64,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Message {
     chat_id: i64,
     text: String,
