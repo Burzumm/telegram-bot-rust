@@ -1,5 +1,7 @@
 use crate::TelegramBot;
 use reqwest::Client;
+use tracing::{error, info};
+use tracing_attributes::instrument;
 
 impl TelegramBot {
     pub fn new(api_token: String) -> Self {
@@ -15,12 +17,16 @@ impl TelegramBot {
         };
     }
 
+    #[instrument]
     pub async fn get_me(&self) {
         let client = Client::new();
         let res = client
             .get(format!("{}{}", self.telegram_bot_api_url, "getMe"))
             .send()
             .await;
-        println!("connect result: {}", res.unwrap().text().await.unwrap())
+        match res {
+            Ok(result) => info!("connect result: {}", result.text().await.unwrap()),
+            Err(error) => error!("connect result: {}", error),
+        }
     }
 }

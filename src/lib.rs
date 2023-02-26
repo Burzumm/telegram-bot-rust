@@ -13,6 +13,12 @@ pub struct TelegramMessage {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct TelegramUpdate {
+    pub update_id: i64,
+    pub message: TelegramMessage,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Message {
     pub chat_id: i64,
     pub text: String,

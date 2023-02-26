@@ -1,15 +1,12 @@
-use crate::{TelegramBot, TelegramMessage, TelegramResponseResult};
+use crate::{TelegramBot, TelegramResponseResult, TelegramUpdate};
 use reqwest::{Client, Error, Response};
-use serde::{Deserialize, Serialize};
-use std::time::Duration;
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct TelegramUpdate {
-    pub update_id: i64,
-    pub message: TelegramMessage,
-}
+use std::time::Duration;
+use tracing::info;
+use tracing_attributes::instrument;
 
 impl TelegramBot {
+    #[instrument]
     pub async fn get_updates(
         &mut self,
         update_timeout_secs: u64,
@@ -19,6 +16,7 @@ impl TelegramBot {
             None => {}
             Some(update_id) => self.last_update_id = update_id,
         }
+        info!("current telegram update id: {}", self.last_update_id);
         let client = Client::new();
         let res = self
             .get_updates_internal(&client, update_timeout_secs)
@@ -29,6 +27,7 @@ impl TelegramBot {
         Ok(update_result.result)
     }
 
+    #[instrument]
     async fn get_updates_internal(
         &mut self,
         client: &Client,
@@ -49,28 +48,28 @@ impl TelegramBot {
             .await;
     }
 
-    pub async fn update_callback<TFunc, TTelegramUpdate>(
-        &mut self,
-        callback: fn(&TFunc, Vec<TelegramUpdate>),
-        update_timeout_secs: u64,
-        func_param: TFunc,
-    ) {
-        let client = reqwest::Client::new();
-        let res = self
-            .get_updates_internal(&client, update_timeout_secs)
-            .await;
-        let update_result = res
-            .unwrap()
-            .json::<TelegramResponseResult<Vec<TelegramUpdate>>>()
-            .await
-            .unwrap();
-        if !update_result.result.is_empty() {
-            for i in &update_result.result {
-                if i.update_id > self.last_update_id {
-                    self.last_update_id = i.update_id;
-                }
-            }
-            callback(&func_param, update_result.result);
-        }
-    }
+    // async fn update_callback<TFunc, TTelegramUpdate>(
+    //     &mut self,
+    //     callback: fn(&TFunc, Vec<TelegramUpdate>),
+    //     update_timeout_secs: u64,
+    //     func_param: TFunc,
+    // ) {
+    //     let client = Client::new();
+    //     let res = self
+    //         .get_updates_internal(&client, update_timeout_secs)
+    //         .await;
+    //     let update_result = res
+    //         .unwrap()
+    //         .json::<TelegramResponseResult<Vec<TelegramUpdate>>>()
+    //         .await
+    //         .unwrap();
+    //     if !update_result.result.is_empty() {
+    //         for i in &update_result.result {
+    //             if i.update_id > self.last_update_id {
+    //                 self.last_update_id = i.update_id;
+    //             }
+    //         }
+    //         callback(&func_param, update_result.result);
+    //     }
+    // }
 }
