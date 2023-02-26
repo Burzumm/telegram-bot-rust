@@ -22,6 +22,7 @@ impl TelegramBot {
         };
     }
 
+
     pub async fn get_me(&self) {
         let client = Client::new();
         let res = client
@@ -40,7 +41,11 @@ impl TelegramBot {
             .await;
     }
 
-    pub async fn get_updates(&mut self, update_timeout_secs: u64) -> Result<Vec<TelegramUpdate>, Error> {
+    pub async fn get_updates(&mut self, update_timeout_secs: u64, last_update_id: Option<i64>) -> Result<Vec<TelegramUpdate>, Error> {
+        match last_update_id {
+            None => {}
+            Some(update_id) => self.last_update_id = update_id,
+        }
         let client = Client::new();
         let res = self
             .get_updates_internal(&client, update_timeout_secs)
@@ -121,7 +126,7 @@ pub struct TelegramBot {
     api_token: String,
     telegram_api_url: String,
     telegram_bot_api_url: String,
-    last_update_id: i64,
+    last_update_id:  i64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
