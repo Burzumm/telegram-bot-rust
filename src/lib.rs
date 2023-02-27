@@ -10,15 +10,26 @@ pub struct TelegramMessage {
     pub message_id: i64,
     pub text: Option<String>,
     pub date: i64,
-    pub entities: Vec<TelegramEntities>
+    pub chat: TelegramChat,
+    pub entities: Vec<TelegramEntities>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct TelegramEntities{
+
+pub struct TelegramChat {
+    pub id: i64,
+    pub first_name: String,
+    pub username: String,
+    #[serde(rename(serialize = "type", deserialize = "type"))]
+    pub chat_type: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TelegramEntities {
     pub offset: i64,
     pub length: i64,
     #[serde(rename(serialize = "type", deserialize = "type"))]
-    pub message_type: String
+    pub message_type: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -36,7 +47,7 @@ pub struct Message {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BotCommand {
     pub command: String,
-    pub  description: String,
+    pub description: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
