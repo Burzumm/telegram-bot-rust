@@ -10,6 +10,15 @@ pub struct TelegramMessage {
     pub message_id: i64,
     pub text: Option<String>,
     pub date: i64,
+    pub entities: Vec<TelegramEntities>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TelegramEntities{
+    offset: i64,
+    length: i64,
+    #[serde(rename(serialize = "type", deserialize = "type"))]
+    message_type: String
 }
 
 #[derive(Serialize, Deserialize, Debug)]
