@@ -5,7 +5,7 @@ mod updates;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TelegramMessage {
     pub message_id: i64,
     pub text: Option<String>,
@@ -13,7 +13,7 @@ pub struct TelegramMessage {
     pub entities: Vec<TelegramEntities>
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TelegramEntities{
     offset: i64,
     length: i64,
@@ -21,13 +21,13 @@ pub struct TelegramEntities{
     message_type: String
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TelegramUpdate {
     pub update_id: i64,
     pub message: TelegramMessage,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Message {
     pub chat_id: i64,
     pub text: String,
@@ -39,13 +39,13 @@ pub struct BotCommand {
     description: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct TelegramResponseResult<T> {
     ok: bool,
     result: T,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TelegramBot {
     api_token: String,
     telegram_api_url: String,
