@@ -58,7 +58,7 @@ pub struct BotCommand {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TelegramResponseResult<T> {
     pub ok: bool,
-    pub result: T,
+    pub result: Option<T>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

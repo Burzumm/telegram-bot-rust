@@ -1,3 +1,4 @@
+use std::io::stderr;
 use crate::{TelegramBot, TelegramResponseResult, TelegramUpdate};
 use reqwest::{Client, Error, Response};
 
@@ -24,7 +25,11 @@ impl TelegramBot {
         let update_result = res
             .json::<TelegramResponseResult<Vec<TelegramUpdate>>>()
             .await?;
-        Ok(update_result.result)
+        match update_result.result {
+            None => panic!("result empty"),
+            Some(result) => return Ok(result)
+
+        }
     }
 
     #[instrument]
